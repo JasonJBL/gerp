@@ -1,0 +1,241 @@
+**********************************************************
+* Project 4: Gerp
+* CS 15
+* README
+* Author: Jake Merritt and Jason Singer
+*********************************************************/
+
+Compile/run:
+     - Compile using
+            make gerp
+     - run executable with
+            ./gerp
+
+Program Purpose:
+
+The purpose of the program is to search through all of the files
+in a given directory for instances of a word. The program prints
+all of the instances of the given word, along with the pathway to
+the word, the line number the word is on, and the text of the line
+to which the word belongs into a given output file.
+
+Acknowledgements:
+
+The TA Jenni helped us with our design checkoff, something
+for which we are quite greatful. Our plan going into the checkoff would
+not have worked, something that she helped us to realize during the
+checkoff.
+
+The TA Annika helped us with a bug in expanding our hash table.
+
+Additionally, we relied upon CPlusPlus.com for extra information
+regarding string streams, infile and outfile objects, and other
+questions we had regarding the use of some of the libraries built
+into C++.
+
+Links:
+
+https://cplusplus.com/reference/sstream/stringstream/stringstream/
+
+https://cplusplus.com/reference/fstream/fstream/
+
+https://cplusplus.com/reference/vector/vector/
+
+https://cplusplus.com/reference/list/list/
+
+Files:
+
+main.cpp:
+    Makes a Gerp object which runs the program.
+
+gerp.h
+    Interface for Gerp class.
+
+gerp.cpp
+    Function definitions for Gerp class. a Gerp object takes in the input 
+    directory traverses through it, fills the hash table in the gerpHash class, 
+    and then provides the query loop to facilitate searches. Private member
+    variables include a gerpHash object, an integer
+    containing the max line size of a line, and a vector containing
+    strings with the paths from the directory to each of its files.
+
+gerpHash.h
+    Interface for Gerphash class.
+
+gerpHash.cpp
+    Function definitions for GerpHash class. A GerpHash class creates a hash
+    table filled with linked lists made up of H_Nodes structs, which contain 
+    string containing a word and a vector of Word structs. Within a word
+    struct are a string with the word name, an integer representing the 
+    line in the file on which the word exists, and an integer representing
+    the path from the parent directory to the file containing the word.
+
+stringProcessing.h
+    Function declariation for stripNonAlphaNum function.
+
+stringProcessing.cpp
+    Function defintion for stripNonAlphaNum function. The stripNonAlphaNum
+    function strips a string of any charactars that are not alphanumeric.
+
+toLower.h
+    Function declariation for toLower function.
+
+
+toLower.cpp
+    Function definition for the toLower function. The toLower function takes
+    a string and makes each char in it lowercase,
+
+unit_tests.h
+    Testing framework for phaseOne and parts of PhaseTwo. Specifically helpful
+    for testing the hash table (on small inputs).
+    
+Important test file: repearinsen/repeat.txt
+        This file checked cases where repeats of the same word were on the
+        same line. It was very important for testing this case.
+
+Architectual Overview:
+
+The relationship between our classes is relatively straightforward.
+The gerpHash class contains a hashtable and the fucntions required
+to manipulate the hash table, and the gerp class creates an index of
+the words in a given directory and then uses a gerpHash object to print 
+out the proper output.
+
+One helpful way to look at it is to map out what happens when the
+program runs.
+
+1 : The main function creates a Gerp object, sending into the constructor
+    the name of the directory and the output file where gerp will send
+    the output.
+
+2 : The constructor calls the tree function, which creates a tree of
+    dir Nodes. With this tree created, the tree function fills in
+    the gerp class private vector pathIndex, which contains the paths 
+    from the directory to each of its files.
+
+3 : The constructor calls the search function, which cycles through
+    the pathIndex vector, using each path string to open each file in 
+    the directory and create a Word struct for every word in each file. 
+    This is where the gerpHash class comes in. Every time a Word struct 
+    is created for a word, it is inserted into the hash table within the 
+    gerpHash which is a private member variable of the gerp class. The key for
+    the hash table is the word, and the value is a series of information
+    about the word, including the line that it is on and the path it takes
+    to get to the word.
+
+4 : The constructor creates an ofstream and sends it into the run function,
+    which starts the query loop. 
+
+5 : Depending on user input, the run function will call one of two functions,
+    printSensitive or printInsensitive. These funcitons in turn call the public
+    functions of the gerpHash class getSensitive and getInsentive
+    (getInsensitve will call getSensitive - modularity!). These gerpHash 
+    functions find the word struct and sends it back into the gerp functions, 
+    which then properly format the output and ensure that duplicates are not 
+    printed.
+
+Data Structures:
+
+Our program stores data in a hash table. In each spot in the hash table
+is a linked list containing a struct. Within the struct is a vector of
+other structs. 
+
+hash tables:
+
+The best way to think of hash tables is that they are arrays or 
+arrayLists where the the number of the slot to which an element belongs
+is more significant than just a number. This is possible by having a
+a hash function, which takes a key - the thing a user will provide to
+access the element they want - and turns it into an integer. The
+integers that mark slots in the array of the hash table will all
+be generated by this hash function. 
+
+For example, imagine a program that, given the name of a football player,
+returns the date and time of every playoff game that the given player
+played in. One way the program could do this is by having a hash table
+where each key is the players name and each value is a string with
+the date and time of the each of their playoff games. When creating
+the hash table, the program would take each players name and turn it
+into an integer. Under the hood, that player's string containing their
+playoff games would belong to the integer produced by the hash function.
+When a user searches for that player, the program will turn the name
+back into that same integer and use it access that player's playoff
+games.
+
+In our program, the hash table key/value pair is a word for the key
+and a linked list of structs for the value. The reason that the value
+is a linked list and not just one of the structs that makes up a node
+in the linked list is so that the program can hangle collisions by
+chaining. A collision occures when the hash fucntion takes in two
+distinct keys and turns them into the same integer. In the previous
+hypothetical it would be like if the hash function took in the names
+"Tom Brady" and "Zach Wilson" and then turned both of their names
+into the integer 5. This is a clearly a problem - if a user enters
+in "Tom Brady" into the program expecting to see a long list of playoff
+games and instead gets nothing (which is what Zach Wilson has won),
+the program will have failed to do its job. 
+
+The solution to this is called chaining, where if a hash function
+turns two distinct keys into the same integer, then both values
+go into that integer's slot as seperate nodes in a linked list. Then,
+when a user searches up a key that corresponds to a linked list
+with more than one node, the program searches through the list until
+the node matches with the given key, and returns the value in that node.
+This is the way that our program handles chaining. This chaining opearion
+is expensive, because the program has to look through each of the nodes
+until it finds the right node.
+
+Testing:
+Testing was split into four main phases:
+
+    Phase 1: testing phase one submission
+
+    Unit tested the string processing input on three versions of
+    possible strings that account for the precense or lack of nonalphanumeric
+    characters. For FSTreeTraversal, we just put cerr statements to ensure 
+    that everything was being printed correctly, and we continued to test this 
+    way until the autograder gave us full marks for this phase
+
+    Phase 2: Unit testing the hashTable
+
+    The gerpHash class was tested with a mix of unit testing asserting and 
+    cerr statements, though mostly unit testing. We temporarily made private
+    member variables of the hash table such as the array under the hood and 
+    the arraySize public so they can be directly accessed and edited. To test
+    our implementation of chaining, we made an altered version of our insert 
+    funciton used in actual program to ensure all insertions were hashed to 
+    the same index under the hood in order to ensure chaining was correctly 
+    handled. For the other funcitons, we just made unit tests for the various
+    cases and debugged until they passed
+
+    Phase 3: Early testing of gerp with print statements:
+
+    For the majority of programming the gerp class, we would make a 
+    funcitonality, then run it on simple data sets or smallGutenberg,
+    and put cerr statements everywhere throughout the program to see
+    what exactly is being run in the various stages of the program. This also
+    helped us find a LARGE amount of bugs. We also made use of the test file
+    repeat.txt mentioned earlier in the README. For each bug, some which were 
+    rooted in the design of our program, we followed 3 steps:
+
+        1. Identify something is wrong, and put cerr statements everywhere to
+        find what it is
+
+        2. Once we find what is wrong, make edits and cerr the new changes 
+
+        3. Once we think we have a viable solution, cerr and check the output
+        to make sure it's correct
+
+    Phase 4: gerp_perf and diff
+    
+        Because phase 3 was extemely lengthy and thorough, by the time we got
+        to diff testing, we were in the final stages of the code. Diff testing 
+        did identify when and why certain lines were being printed and when 
+        they weren't and changes were made accordingly. After, we used 
+        gerp_perf to identify that our program was using way too much GB RAM,
+        which led to a few changes in the way we indexed our data, and then we
+        checked with the program to ensure we weer under the cutoffs.
+
+
+Time:
+30 hours
